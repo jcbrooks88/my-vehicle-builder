@@ -32,17 +32,18 @@ class Cli {
           type: "list",
           name: "selectedVehicleVin",
           message: "Select a vehicle to perform an action on",
-          choices: this.vehicles.map((vehicle) => {
-            return {
-              name: `${vehicle.vin} -- ${vehicle.make} ${vehicle.model}`,
-              value: vehicle.vin,
-            };
-          }),
+          choices: this.vehicles.map((vehicle) => ({
+            name: `${vehicle.vin} -- ${vehicle.make} ${vehicle.model}`,
+            value: vehicle.vin,
+          })),
         },
       ])
       .then((answers) => {
         this.selectedVehicleVin = answers.selectedVehicleVin;
         this.performActions();
+      })
+      .catch((error) => {
+        console.error("Error choosing a vehicle:", error);
       });
   }
 
@@ -58,13 +59,20 @@ class Cli {
         },
       ])
       .then((answers) => {
-        if (answers.vehicleType === "Car") {
-          this.createCar();
-        } else if (answers.vehicleType === "Truck") {
-          this.createTruck();
-        } else if (answers.vehicleType === "Motorbike") {
-          this.createMotorbike();
+        switch (answers.vehicleType) {
+          case "Car":
+            this.createCar();
+            break;
+          case "Truck":
+            this.createTruck();
+            break;
+          case "Motorbike":
+            this.createMotorbike();
+            break;
         }
+      })
+      .catch((error) => {
+        console.error("Error creating a vehicle:", error);
       });
   }
 
@@ -117,8 +125,8 @@ class Cli {
           parseInt(answers.year),
           parseInt(answers.weight),
           parseInt(answers.topSpeed),
-          parseInt(answers.towingCapacity),
-          []
+          answers.towingCapacity,
+          answers.wheels,
         );
         this.vehicles.push(truck);
         this.selectedVehicleVin = truck.vin;
@@ -272,9 +280,9 @@ class Cli {
             break;
           case "Wheelie":
             if (selectedVehicle instanceof Motorbike) {
-              selectedVehicle.performWheelie();
+              selectedVehicle.wheelie();
             } else {
-              console.log("Only motorbikes can perform a wheelie. Please select another action.");
+              console.log("Only motorbikes can perform a wheelie.");
               this.performActions();
             }
             break;
@@ -282,8 +290,30 @@ class Cli {
             this.startCli();
             return;
           case "Exit":
-            this.exit
+            console.log("Exiting CLI...");
+            this.exit = true;
+            return;
+        }
 
+        // Call performActions again if not exiting
+        if (!this.exit) {
+          this.performActions();
+        }
+      })
+      .catch((error) => {
+        console.error("Error performing actions:", error);
+      });
+  }
 
-// export the Cli class
+  // Method to start the CLI
+  startCli(): void {
+    if (this.vehicles.length > 0) {
+      this.chooseVehicle();
+    } else {
+      this.createVehicle();
+    }
+  }
+}
+
+// Export the Cli class
 export default Cli;
